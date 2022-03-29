@@ -20,7 +20,7 @@ var _global = typeof window === 'object' && window.window === window
     var githubProvidedUrl = new RegExp("^https://api.github.com/.*");
     var githubDownloadUrl = new RegExp("^https://raw.githubusercontent.com/.*");
     var isBusy = false;
-    var isSafari = Object.prototype.toString.call(window.HTMLElement).indexOf('Constructor') > 0 && 
+    var isSafari = Object.prototype.toString.call(window.HTMLElement).indexOf('Constructor') > 0 &&
         /Safari/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent);
 
     var token;
@@ -59,7 +59,7 @@ var _global = typeof window === 'object' && window.window === window
         if(typeof repoUrl != 'string') return;
         var matches = repoUrl.match(repoExp);
         if(matches && matches.length > 0){
-            var root = (matches[5])? 
+            var root = (matches[5])?
                 "https://github.com/" + matches[1] + "/" + matches[2] + "/tree/" + matches[5] :
                 repoUrl;
             return {
@@ -77,7 +77,7 @@ var _global = typeof window === 'object' && window.window === window
     var _githubUrlChecker = {
         _workerBlobUrl: null,
         _branchChecker: function(baseUrl, branch, path){
-            
+
             if(!this._workerBlobUrl){
                 this._workerBlobUrl = URL.createObjectURL( new Blob([ '(',
                     function(){
@@ -86,6 +86,13 @@ var _global = typeof window === 'object' && window.window === window
                             var xhr = new XMLHttpRequest();
                             var params = opts.params, strParams;
                             if (params && typeof params === 'object') {
+                                if (params["access_token"]) {
+                                    var token = params["access_token"] || "";
+                                    // remove it for do not add to the query parameter.
+                                    delete params["access_token"];
+                                    if (!opts.headers) opts.headers = {};
+                                    opts.headers["Authorization"] = "token " + token;
+                                }
                                 strParams = Object.keys(params).map(function (key) {
                                     return encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
                                 }).join('&');
@@ -103,7 +110,7 @@ var _global = typeof window === 'object' && window.window === window
                         onmessage = function(e){
                             // e.data
                             var inputData = e.data;
-                            
+
                             var toBreak = false;
                             var branchTry = inputData.branchTry,
                                 pathTry = inputData.pathTry,
@@ -114,7 +121,7 @@ var _global = typeof window === 'object' && window.window === window
                             var results = {};
                             while(!toBreak){ // case: release, release/2.1
                                 params["ref"] = branchTry;
-                                
+
                                 var res = makeRequest({
                                     url: inputData.baseUrl + pathTry,
                                     params: params
@@ -143,9 +150,9 @@ var _global = typeof window === 'object' && window.window === window
                     }.toString(),
                 ')()' ], { type: 'application/javascript' } ) );
             }
-            
+
             var checkWorker = new Worker( this._workerBlobUrl );
-            
+
             if(path && path[path.length-1] == "/") path = path.substring(0, path.length - 1);
             // pass parameter to worker
             checkWorker.postMessage({
@@ -177,7 +184,7 @@ var _global = typeof window === 'object' && window.window === window
                 results = {};
 
             if(repoUrl[repoUrl.length-1] == "/") repoUrl = repoUrl.substring(0, repoUrl.length - 1);
-            
+
             if(!window.Worker){
                 results = resolveUrl(repoUrl);
                 if(results) return Promise.resolve(results);
@@ -211,7 +218,7 @@ var _global = typeof window === 'object' && window.window === window
                 results.project = matches[2];   // case: CNTK
                 results.branch = results.path = results.rootUrl = "";
                 if(matches[4]){ // case: tree
-                    
+
                     results.type = matches[4];
 
                     return new Promise(function(resolve, reject){
@@ -251,9 +258,9 @@ var _global = typeof window === 'object' && window.window === window
     // default type is "json"
     var _callAjax = function(url, params, type){
         return new Promise(function(resolve, reject){
-            var xmlhttp, 
+            var xmlhttp,
                 token = params["access_token"] || "";
-            
+
             // remove it for do not add to the query parameter.
             delete params["access_token"];
 
@@ -299,7 +306,7 @@ var _global = typeof window === 'object' && window.window === window
         params = params || {};
         if(token) params["access_token"] = token;
         return _callAjax(url, params)
-            .then(function(xmlResponse){ 
+            .then(function(xmlResponse){
                 return xmlResponse.response.content;
             });
     };
@@ -479,11 +486,11 @@ var _global = typeof window === 'object' && window.window === window
                 progressCallback.call(callbackScope, 'prepare', 'Finding file/dir content path from resolved URL');
                 var params = {};
                 if(resolved.branch) params["ref"] = resolved.branch;
-                if(token) params["access_token"] = token;            
+                if(token) params["access_token"] = token;
 
                 if(resolved.type == "tree"){
                     // for tree handles
-                    _callAjax("https://api.github.com/repos/" + resolved.author + 
+                    _callAjax("https://api.github.com/repos/" + resolved.author +
                         "/" + resolved.project + "/contents/" + resolved.path, params)
                         .then(function(xmlResponse){
                             var results = xmlResponse.response;
@@ -496,7 +503,7 @@ var _global = typeof window === 'object' && window.window === window
                                         _getTreeOfGitUrl(item.git_url)
                                         .then(function(results){
                                             // add currentPath
-                                            results.forEach(function(inner){ 
+                                            results.forEach(function(inner){
                                                 inner.path = currentPath + "/" + inner.path;
                                                 progressCallback.call(callbackScope, 'processing', 'Path: ' + inner.path + ' found.');
                                             });
